@@ -1,0 +1,7 @@
+- name: package install
+  hosts: localhost
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+    - install-package

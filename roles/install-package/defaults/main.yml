@@ -1,0 +1,6 @@
+---
+sourceFolder: "{{home}}/package"
+repoFolder: "/var/www/package"
+urlSource: "https://github.com/peervpn/peervpn"
+sourceVersion: "0.0.44"
+makefile: "Makefile"

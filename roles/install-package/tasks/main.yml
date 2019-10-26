@@ -1,0 +1,82 @@
+---
+- name: Check source folder {{ sourceFolder }} is already created
+  stat: path={{ sourceFolder }}
+  register: source_folder_installed
+
+- name: Check repo folder {{ repoFolder }} is already created
+  stat: path={{ repoFolder }}
+  register: repo_folder_installed
+
+- name: Install packages
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - unzip
+      - autoconf
+      - automake
+      - libtool
+      - autotools-dev
+      - dpkg-dev
+      - fakeroot
+      - dh-make
+      - libssl1.0-dev
+      - libz-dev
+      - apache2
+
+- name: Create source folder
+  ignore_errors: yes
+  file:
+    path: "{{ sourceFolder }}"
+    state: directory
+    mode: "0755"
+  when: >
+    source_folder_installed.stat.exists == false
+
+- name: Download source
+  get_url:
+    url: "{{ urlSource }}/archive/master.zip"
+    dest: "{{ sourceFolder }}"
+    mode: '0755'
+
+- name: Unzip source
+  shell: unzip {{ sourceFolder }}/master.zip
+
+- name: Rename source folder
+  command: mv {{ sourceFolder }}/master.zip {{ sourceFolder }}/peervpn-{{ sourceVersion }}
+
+- name: Delete Makefile
+  file:
+    path: "{{ sourceFolder }}/peervpn-{{ sourceVersion }}/Makefile"
+    state: absent
+
+- name: Create Makefile
+  template:
+    src: "{{ makefile }}"
+    dest: "{{ sourceFolder }}/peervpn-{{ sourceVersion }}/{{ makefile }}"
+
+- name: Prebild package
+  shell: dh_make --createorig
+  args:
+    chdir: "{{ sourceFolder }}/peervpn-{{ sourceVersion }}"
+
+- name: Build package
+  shell: dpkg-buildpackage -rfakeroot
+  args:
+    chdir: "{{ sourceFolder }}/peervpn-{{ sourceVersion }}"
+
+- name: Create repo folder
+  ignore_errors: yes
+  file:
+    path: "{{ repoFolder }}"
+    state: directory
+    mode: "0755"
+  when: >
+    repo_folder_installed.stat.exists == false
+
+- name: Move .deb package to repo folder
+  command: mv {{ sourceFolder }}/*.deb {{ repoFolder }}
+
+- apt_repository:
+    repo: deb deb http://localhost/package/
+    state: present
