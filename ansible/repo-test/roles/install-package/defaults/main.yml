@@ -1,0 +1,7 @@
+---
+repoFolder: "/var/www/html/package"
+urlSource: "https://github.com/peervpn/peervpn"
+sourceFolder: "/home/package"
+packageName: "peervpn-"
+sourceVersion: "0.0.44"
+makefile: "Makefile"
