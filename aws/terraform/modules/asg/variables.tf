@@ -21,11 +21,6 @@ variable "orchestration" {
   default     = "Terraform"
 }
 
-variable "createdby" {
-  description = "Created by"
-  default     = "Vitaliy Natarov"
-}
-
 variable "create_lc" {
   description = "Whether to create launch configuration"
   default     = true

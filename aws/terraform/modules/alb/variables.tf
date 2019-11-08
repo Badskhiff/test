@@ -21,11 +21,6 @@ variable "orchestration" {
   default     = "Terraform"
 }
 
-variable "createdby" {
-  description = "Created by"
-  default     = "Vitaliy Natarov"
-}
-
 variable "security_groups" {
   description = "A list of security group IDs to assign to the ELB. Only valid if creating an ELB within a VPC"
   type        = "list"
