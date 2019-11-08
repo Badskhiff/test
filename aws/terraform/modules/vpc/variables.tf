@@ -1,6 +1,4 @@
-#-----------------------------------------------------------
-# Global or/and default variables
-#-----------------------------------------------------------
+#Global variables
 variable "name" {
   description = "Name to be used on all resources as prefix"
   default     = "TEST"
@@ -40,15 +38,7 @@ variable "orchestration" {
   description = "Type of orchestration"
   default     = "Terraform"
 }
-
-variable "createdby" {
-  description = "Created by"
-  default     = "Vitaliy Natarov"
-}
-
-#---------------------------------------------------------------
-# Custom variables
-#---------------------------------------------------------------
+#Custom variables
 variable "allowed_ports" {
   description = "Allowed ports from/to host"
   type        = "list"
@@ -119,26 +109,6 @@ variable "private_propagating_vgws" {
 variable "public_propagating_vgws" {
   description = "A list of VGWs the public route table should propagate."
   default     = []
-}
-
-variable "enable_vpn_gateway" {
-  description = "Should be true if you want to create a new VPN Gateway resource and attach it to the VPC"
-  default     = false
-}
-
-variable "enable_nat_gateway" {
-  description = "Allow Nat GateWay to/from private network"
-  default     = "false"
-}
-
-variable "single_nat_gateway" {
-  description = "should be true if you want to provision a single shared NAT Gateway across all of your private networks"
-  default     = "false"
-}
-
-variable "enable_eip" {
-  description = "Allow creation elastic eip"
-  default     = "false"
 }
 
 variable "map_public_ip_on_launch" {

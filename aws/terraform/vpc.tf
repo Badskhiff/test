@@ -59,7 +59,7 @@ resource "aws_route_table" "aws_route_table" {
     Name            = "aws_internet_gateway-default"
     Environment     = "${var.environment}"
     Orchestration   = "${var.orchestration}"
-    Createdby       = "${var.createdby}"
+
   }
 }
 resource "aws_route_table_association" "aws_route_table_association" {

@@ -1,14 +1,7 @@
-####VPC Create block
-#aws_vpc - function
-#test_vpc - name (can use to call vpc_id  main_route_table_id)
-#cidr_block  - vpc address
-#instance_tenancy - «default»/«dedicated»/«host» instance type
-#enable_dns_support - support dns to vpc
-#enable_dns_hostname - indicates whether instances running in VPC will receive host names
-#assign_generated_ipv6_cidr_block - generate ipv6
-#enable_classiclink - ec2 link to vpc
-#tags - to tag
-resource "aws_vpc" "test_vpc" {
+#---------------------------------------------------
+# Create VPC
+#---------------------------------------------------
+resource "aws_vpc" "vpc" {
   cidr_block                          = "${cidrsubnet(var.vpc_cidr, 0, 0)}"
   #cidr_block                          = "${var.vpc_cidr}"
   instance_tenancy                    = "${var.instance_tenancy}"
@@ -21,22 +14,22 @@ resource "aws_vpc" "test_vpc" {
     Name            = "${lower(var.name)}-vpc-${lower(var.environment)}"
     Environment     = "${var.environment}"
     Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
   }
 }
-####Security create block
-#ingress/egress — Inbound / Outbound Connection for Specified Ports
-#from_port - Inbound / Outbound connection for the specified port from the host
-#to_port - Inbound / Outbound connection for the specified port on the host
-#protocol - Specify the protocol that will be used for incoming / outgoing connections
-resource "aws_security_group" "test_security" {
-  name                = "${var.name}-test_security-${var.environment}"
-  description         = "Security Group ${var.name}-test_security-${var.environment}"
+#---------------------------------------------------
+# Create security group
+#---------------------------------------------------
+resource "aws_security_group" "sg" {
+  name                = "${var.name}-sg-${var.environment}"
+  description         = "Security Group ${var.name}-sg-${var.environment}"
   vpc_id              = "${aws_vpc.vpc.id}"
 
   tags {
-    Name            = "${var.name}-test_security-${var.environment}"
+    Name            = "${var.name}-sg-${var.environment}"
     Environment     = "${var.environment}"
     Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
   }
   lifecycle {
     create_before_destroy = true
@@ -58,7 +51,9 @@ resource "aws_security_group" "test_security" {
 
   depends_on  = ["aws_vpc.vpc"]
 }
-####Create security rule
+#---------------------------------------------------
+# Add security group rules (one more way)
+#---------------------------------------------------
 resource "aws_security_group_rule" "ingress_ports" {
   count               = "${length(var.allowed_ports)}"
 
@@ -105,34 +100,14 @@ resource "aws_security_group_rule" "default_egress" {
 
   depends_on        = ["aws_security_group.sg"]
 }
-####Create public subnet
-#vpc_id - Identification number of the created VPC
-#map_public_ip_on_launch - Specify true to indicate that instances running on the subnet must be assigned a public IP address. The default value is false
-#availability_zone - Zone for subnet development
-resource "aws_subnet" "test_public_subnets" {
-  count                   = "${length(var.public_subnet_cidrs)}"
-
-  cidr_block              = "${element(var.public_subnet_cidrs, count.index)}"
-  vpc_id                  = "${aws_vpc.test_vpc.id}"
-  map_public_ip_on_launch = "${var.map_public_ip_on_launch}"
-  #count                   = "${length(var.availability_zones)}"
-  #availability_zone       = "${element(var.availability_zones, count.index)}"
-  availability_zone       = "${element(var.availability_zones, 0)}"
-
-  tags {
-    Name            = "public_subnet-${element(var.availability_zones, count.index)}"
-    Environment     = "${var.environment}"
-    Orchestration   = "${var.orchestration}"
-  }
-
-  depends_on        = ["aws_vpc.vpc"]
-}
-####Create private subnet
+#---------------------------------------------------
+# Add AWS subnets (private)
+#---------------------------------------------------
 resource "aws_subnet" "private_subnets" {
   count                   = "${length(var.private_subnet_cidrs)}"
 
   cidr_block              = "${element(var.private_subnet_cidrs, count.index)}"
-  vpc_id                  = "${aws_vpc.test_vpc.id}"
+  vpc_id                  = "${aws_vpc.vpc.id}"
   map_public_ip_on_launch = "false"
   #count                   = "${length(var.availability_zones)}"
   #availability_zone       = "${element(var.availability_zones, count.index)}"
@@ -143,11 +118,36 @@ resource "aws_subnet" "private_subnets" {
     Name            = "private_subnet-${element(var.availability_zones, count.index)}"
     Environment     = "${var.environment}"
     Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
   }
 
   depends_on        = ["aws_vpc.vpc"]
 }
-####Create internet gateway
+#---------------------------------------------------
+# Add AWS subnets (public)
+#---------------------------------------------------
+resource "aws_subnet" "public_subnets" {
+  count                   = "${length(var.public_subnet_cidrs)}"
+
+  cidr_block              = "${element(var.public_subnet_cidrs, count.index)}"
+  vpc_id                  = "${aws_vpc.vpc.id}"
+  map_public_ip_on_launch = "${var.map_public_ip_on_launch}"
+  #count                   = "${length(var.availability_zones)}"
+  #availability_zone       = "${element(var.availability_zones, count.index)}"
+  availability_zone       = "${element(var.availability_zones, 0)}"
+
+  tags {
+    Name            = "public_subnet-${element(var.availability_zones, count.index)}"
+    Environment     = "${var.environment}"
+    Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
+  }
+
+  depends_on        = ["aws_vpc.vpc"]
+}
+#---------------------------------------------------
+# Add AWS internet gateway
+#---------------------------------------------------
 resource "aws_internet_gateway" "internet_gw" {
   count = "${length(var.public_subnet_cidrs) > 0 ? 1 : 0}"
 
@@ -157,6 +157,7 @@ resource "aws_internet_gateway" "internet_gw" {
     Name            = "internet-gateway to ${var.name}-vpc-${var.environment}"
     Environment     = "${var.environment}"
     Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
   }
 
   depends_on        = ["aws_vpc.vpc"]
@@ -171,6 +172,7 @@ resource "aws_route_table" "public_route_tables" {
     Name            = "public_route_tables"
     Environment     = "${var.environment}"
     Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
   }
 
   depends_on        = ["aws_vpc.vpc"]
@@ -184,7 +186,29 @@ resource "aws_route" "public_internet_gateway" {
 
   depends_on             = ["aws_internet_gateway.internet_gw", "aws_route_table.public_route_tables"]
 }
-####Create private route table
+#---------------------------------------------------
+# CREATE EIP
+#---------------------------------------------------
+resource "aws_eip" "nat_eip" {
+  count       = "${var.enable_nat_gateway ? (var.single_nat_gateway ? 1 : length(var.availability_zones)) : 0}"
+
+  vpc         = true
+
+  depends_on  = ["aws_internet_gateway.internet_gw"]
+}
+#---------------------------------------------------
+# CREATE NAT
+#---------------------------------------------------
+resource "aws_nat_gateway" "nat_gw" {
+  count           = "${var.enable_nat_gateway ? (var.single_nat_gateway ? 1 : length(var.availability_zones)) : 0}"
+
+  allocation_id   = "${element(aws_eip.nat_eip.*.id, (var.single_nat_gateway ? 0 : count.index))}"
+  subnet_id       = "${element(aws_subnet.public_subnets.*.id, (var.single_nat_gateway ? 0 : count.index))}"
+
+  depends_on      = ["aws_internet_gateway.internet_gw", "aws_subnet.public_subnets"]
+}
+#---------------------------------------------------
+# Create private route table and the route to the internet
 #---------------------------------------------------
 resource "aws_route_table" "private_route_tables" {
   count               = "${length(var.availability_zones)}"
@@ -196,11 +220,43 @@ resource "aws_route_table" "private_route_tables" {
     Name            = "private_route_tables"
     Environment     = "${var.environment}"
     Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
   }
 
   depends_on          = ["aws_vpc.vpc"]
 }
-####CREATE DHCP
+resource "aws_route" "private_nat_gateway" {
+  count                   = "${var.enable_nat_gateway ? length(var.availability_zones) : 0}"
+
+  route_table_id          = "${element(aws_route_table.private_route_tables.*.id, count.index)}"
+  destination_cidr_block  = "0.0.0.0/0"
+  nat_gateway_id          = "${element(aws_nat_gateway.nat_gw.*.id, count.index)}"
+
+  depends_on              = ["aws_nat_gateway.nat_gw", "aws_route_table.private_route_tables"]
+}
+#---------------------------------------------------
+# CREATE VPN
+#---------------------------------------------------
+###############################
+# VPN Gateway
+###############################
+resource "aws_vpn_gateway" "vpn_gw" {
+  count   = "${var.enable_vpn_gateway ? 1 : 0}"
+
+  vpc_id  = "${aws_vpc.vpc.id}"
+
+  tags {
+    Name            = "vpn_gateway"
+    Environment     = "${var.environment}"
+    Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
+  }
+
+  depends_on          = ["aws_vpc.vpc"]
+}
+#---------------------------------------------------
+# CREATE DHCP
+#---------------------------------------------------
 resource "aws_vpc_dhcp_options" "vpc_dhcp_options" {
   count                = "${var.enable_dhcp_options ? 1 : 0}"
 
@@ -214,10 +270,15 @@ resource "aws_vpc_dhcp_options" "vpc_dhcp_options" {
     Name            = "dhcp"
     Environment     = "${var.environment}"
     Orchestration   = "${var.orchestration}"
+    Createdby       = "${var.createdby}"
   }
 }
-####Route Table Associations private
-
+#---------------------------------------------------
+# Route Table Associations
+#---------------------------------------------------
+##############################
+# private
+##############################
 resource "aws_route_table_association" "private_route_table_associations" {
   count           = "${length(var.private_subnet_cidrs)}"
 
@@ -226,7 +287,9 @@ resource "aws_route_table_association" "private_route_table_associations" {
 
   depends_on      = ["aws_route_table.private_route_tables", "aws_subnet.private_subnets"]
 }
-####Route Table Associations public
+##############################
+# public
+##############################
 resource "aws_route_table_association" "public_route_table_associations" {
   count           = "${length(var.public_subnet_cidrs)}"
 
@@ -235,7 +298,9 @@ resource "aws_route_table_association" "public_route_table_associations" {
 
   depends_on      = ["aws_route_table.public_route_tables", "aws_subnet.public_subnets"]
 }
-#### DHCP Options
+###############################
+# DHCP Options Set Association
+###############################
 resource "aws_vpc_dhcp_options_association" "vpc_dhcp_options_association" {
   count           = "${var.enable_dhcp_options ? 1 : 0}"
 

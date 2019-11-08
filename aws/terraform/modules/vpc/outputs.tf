@@ -1,25 +1,25 @@
 output "instance_tenancy" {
-  value = "${aws_vpc.vpc.instance_tenancy}"
+  value = "${aws_vpc.test_vpc.instance_tenancy}"
 }
 
 output "vpc_id" {
-  value = "${aws_vpc.vpc.id}"
+  value = "${aws_vpc.test_vpc.id}"
 }
 
 output "vpc_cidr_block" {
-  value = "${aws_vpc.vpc.cidr_block}"
+  value = "${aws_vpc.test_vpc.cidr_block}"
 }
 
 output "default_network_acl_id" {
-  value = "${aws_vpc.vpc.default_network_acl_id}"
+  value = "${aws_vpc.test_vpc.default_network_acl_id}"
 }
 
 output "security_group_id" {
-  value = "${aws_security_group.sg.id}"
+  value = "${aws_security_group.test_security.id}"
 }
 
 output "default_security_group_id" {
-  value = "${aws_vpc.vpc.default_security_group_id}"
+  value = "${aws_vpc.test_vpc.default_security_group_id}"
 }
 
 output "public_route_table_ids" {
@@ -66,10 +66,4 @@ output "natgw_ids" {
 output "gateway_id" {
   description = "The ID of the Internet Gateway"
   value       = "${element(concat(aws_internet_gateway.internet_gw.*.id, list("")), 0)}"
-}
-
-# VPN Gateway
-output "vgw_id" {
-  description = "The ID of the VPN Gateway"
-  value       = "${element(concat(aws_vpn_gateway.vpn_gw.*.id, list("")), 0)}"
 }
