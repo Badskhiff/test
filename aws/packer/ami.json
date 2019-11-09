@@ -1,5 +1,5 @@
 {
-  "_comment" : "Simple Packer Template using Amazon Linux 2017.03",
+  "_comment" : "test",
   "variables": {
     "aws_access_key": "AKIATTBUSM2QZYRIY3U4",
     "aws_secret_key": "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"
