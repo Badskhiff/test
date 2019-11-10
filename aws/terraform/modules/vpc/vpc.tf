@@ -15,12 +15,6 @@ resource "aws_vpc" "test_vpc" {
   enable_dns_hostnames                = var.enable_dns_hostnames
   assign_generated_ipv6_cidr_block    = var.assign_generated_ipv6_cidr_block
   enable_classiclink                  = var.enable_classiclink
-
-  tags {
-    Name            = "${lower(var.name)}-vpc-${lower(var.environment)}"
-    Environment     = var.environment
-    Orchestration   = var.orchestration
-  }
 }
 ####Security create block
 #ingress/egress — Inbound / Outbound Connection for Specified Ports
@@ -31,11 +25,6 @@ resource "aws_security_group" "test_security" {
   name                = "${var.name}-test_security-${var.environment}"
   description         = "Security Group ${var.name}-test_security-${var.environment}"
   vpc_id              = aws_vpc.test_vpc.id
-  tags {
-    Name            = "${var.name}-test_security-${var.environment}"
-    Environment     = var.environment
-    Orchestration   = var.orchestration
-  }
   lifecycle {
     create_before_destroy = true
   }
@@ -105,11 +94,6 @@ resource "aws_subnet" "public_subnets" {
   vpc_id                  = aws_vpc.test_vpc.id
   map_public_ip_on_launch = var.map_public_ip_on_launch
   availability_zone       = element(var.availability_zones, 0)
-  tags {
-    Name            = "public_subnet-${element(var.availability_zones, count.index)}"
-    Environment     = var.environment
-    Orchestration   = var.orchestration
-  }
   depends_on        = ["aws_vpc.test_vpc"]
 }
 ####Create private subnet
@@ -119,22 +103,12 @@ resource "aws_subnet" "private_subnets" {
   vpc_id                  = aws_vpc.test_vpc.id
   map_public_ip_on_launch = "false"
   availability_zone       = element(var.availability_zones, 0)
-  tags {
-    Name            = "private_subnet-${element(var.availability_zones, count.index)}"
-    Environment     = var.environment
-    Orchestration   = var.orchestration
-  }
   depends_on        = ["aws_vpc.test_vpc"]
 }
 ####Create internet gateway
 resource "aws_internet_gateway" "internet_gw" {
   count = length(var.public_subnet_cidrs) > 0 ? 1 : 0
   vpc_id = aws_vpc.test_vpc.id
-  tags {
-    Name            = "internet-gateway to ${var.name}-vpc-${var.environment}"
-    Environment     = var.environment
-    Orchestration   = var.orchestration
-  }
   depends_on        = ["aws_vpc.test_vpc"]
 }
 resource "aws_route_table" "public_route_tables" {
@@ -142,18 +116,13 @@ resource "aws_route_table" "public_route_tables" {
   vpc_id           = aws_vpc.test_vpc.id
   propagating_vgws = [
     var.public_propagating_vgws]
-  tags {
-    Name            = "public_route_tables"
-    Environment     = var.environment
-    Orchestration   = var.orchestration
-  }
   depends_on        = ["aws_vpc.test_vpc"]
 }
 resource "aws_route" "public_internet_gateway" {
   count                  = length(var.public_subnet_cidrs) > 0 ? 1 : 0
-  route_table_id         = aws_route_table.public_route_tables.id
+  route_table_id         = element(aws_route_table.public_route_tables.*.id, count.index)
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.internet_gw.id
+  gateway_id             = element(aws_internet_gateway.internet_gw.*.id, count.index)
   depends_on             = ["aws_internet_gateway.internet_gw", "aws_route_table.public_route_tables"]
 }
 ####Create private route table
@@ -161,14 +130,7 @@ resource "aws_route" "public_internet_gateway" {
 resource "aws_route_table" "private_route_tables" {
   count               = length(var.availability_zones)
   vpc_id              = aws_vpc.test_vpc.id
-  propagating_vgws    = [
-    var.private_propagating_vgws]
-
-  tags {
-    Name            = "private_route_tables"
-    Environment     = var.environment
-    Orchestration   = var.orchestration
-  }
+  #propagating_vgws    = [var.private_propagating_vgws]
   depends_on          = ["aws_vpc.test_vpc"]
 }
 ####CREATE DHCP
@@ -179,12 +141,6 @@ resource "aws_vpc_dhcp_options" "vpc_dhcp_options" {
   ntp_servers          = var.dhcp_options_ntp_servers
   netbios_name_servers = var.dhcp_options_netbios_name_servers
   netbios_node_type    = var.dhcp_options_netbios_node_type
-
-  tags {
-    Name            = "dhcp"
-    Environment     = var.environment
-    Orchestration   = var.orchestration
-  }
 }
 ####Route Table Associations private
 
@@ -198,13 +154,13 @@ resource "aws_route_table_association" "private_route_table_associations" {
 resource "aws_route_table_association" "public_route_table_associations" {
   count           = length(var.public_subnet_cidrs)
   subnet_id       = element(aws_subnet.public_subnets.*.id, count.index)
-  route_table_id  = aws_route_table.public_route_tables.id
+  route_table_id  = element(aws_route_table.public_route_tables.*.id, count.index)
   depends_on      = ["aws_route_table.public_route_tables", "aws_subnet.public_subnets"]
 }
 #### DHCP Options
 resource "aws_vpc_dhcp_options_association" "vpc_dhcp_options_association" {
   count           = var.enable_dhcp_options ? 1 : 0
   vpc_id          = aws_vpc.test_vpc.id
-  dhcp_options_id = aws_vpc_dhcp_options.vpc_dhcp_options.id
+  dhcp_options_id = element(aws_vpc_dhcp_options.vpc_dhcp_options.*.id, count.index)
   depends_on      = ["aws_vpc.test_vpc", "aws_vpc_dhcp_options.vpc_dhcp_options"]
 }

@@ -1,80 +1,94 @@
-# Instance Profile
-resource "aws_iam_instance_profile" "iam_instance_profile" {
-  name        = "${lower(var.name)}-iam_instance_profile-${lower(var.environment)}"
-  role        = aws_iam_role.iam_role.name
-  depends_on  = ["aws_iam_role.iam_role"]
-}
-# IAM Role
-resource "aws_iam_role" "iam_role" {
-  name                = "${lower(var.name)}-iam_role-${lower(var.environment)}"
-  description         = "IMA ${var.name}-role-${var.environment} role"
-  path                = "/"
-  assume_role_policy  = data.aws_iam_policy_document.role-policy-document.json
-}
-data "aws_iam_policy_document" "role-policy-document" {
-  "statement" {
-    effect = "Allow"
+#---------------------------------------------------
+# Create AWS SNS topic
+#---------------------------------------------------
+resource "aws_sns_topic" "sns_topic" {
+  #name_prefix = "${lower(var.name)}-sns-"
+  name            = "${lower(var.name)}-sns-${lower(var.environment)}"
+  display_name    = "${lower(var.name)}-sns-${lower(var.environment)}"
+  delivery_policy = "${data.template_file.sns_topic_delivery_policy_document.rendered}"
 
-    principals {
-      identifiers = [
-        var.aws_iam_role-principals,
+  depends_on = ["data.template_file.sns_topic_delivery_policy_document"]
+}
+
+data "template_file" "sns_topic_delivery_policy_document" {
+
+  template = "${file("${path.module}/policies/sns_topic_delivery_policy_document.json.tpl")}"
+
+  vars {
+    minDelayTarget                  = "${var.minDelayTarget}"
+    maxDelayTarget                  = "${var.maxDelayTarget}"
+    numRetries                      = "${var.numRetries}"
+    numMaxDelayRetries              = "${var.numMaxDelayRetries}"
+    numNoDelayRetries               = "${var.numNoDelayRetries}"
+    numMinDelayRetries              = "${var.numMinDelayRetries}"
+    backoffFunction                 = "${var.backoffFunction}"
+    disableSubscriptionOverrides    = "${var.disableSubscriptionOverrides}"
+  }
+
+}
+#---------------------------------------------------
+# Create AWS SNS topic policies
+#---------------------------------------------------
+resource "aws_sns_topic_policy" "sns_topic_policy" {
+  arn             = "${aws_sns_topic.sns_topic.arn}"
+  policy          = "${data.aws_iam_policy_document.sns_topic_policy_document.json}"
+
+  depends_on  = ["aws_sns_topic.sns_topic", "data.aws_iam_policy_document.sns_topic_policy_document"]
+}
+
+data "aws_iam_policy_document" "sns_topic_policy_document" {
+  policy_id = "__default_policy_ID"
+
+  statement {
+    actions = [
+      "SNS:Subscribe",
+      "SNS:SetTopicAttributes",
+      "SNS:RemovePermission",
+      "SNS:Receive",
+      "SNS:Publish",
+      "SNS:ListSubscriptionsByTopic",
+      "SNS:GetTopicAttributes",
+      "SNS:DeleteTopic",
+      "SNS:AddPermission",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceOwner"
+
+      values = [
+        "${var.account-id}",
       ]
-
-      type = "Service"
     }
 
-    actions = [
-      "sts:AssumeRole",
-    ]
-  }
-}
-# IAM Policy
-resource "aws_iam_policy" "iam_policy" {
-  name        = "${lower(var.name)}-iam_policy-${lower(var.environment)}"
-  description = "AIM ${var.name}-policy-${var.environment} policy"
-  policy      = data.aws_iam_policy_document.policy-document.json
-}
-data "aws_iam_policy_document" "policy-document" {
-  "statement" {
     effect = "Allow"
 
-    resources = [
-      var.aws_iam_policy-resources,
-    ]
-
-    actions = [
-      var.aws_iam_policy-actions,
-    ]
-  }
-}
-# EC2 Policy Assuming Crossaccount Role
-resource "aws_iam_role" "cross_account_assume_role" {
-  count              = var.enable_crossaccount_role ? 1 : 0
-
-  name               = "${var.name}-cross_account_assume_role-${var.environment}"
-  description        = "IMA ${var.name}-cross_account_assume_role-${var.environment} role"
-  assume_role_policy = data.aws_iam_policy_document.cross_account_assume_role_policy.json
-}
-data "aws_iam_policy_document" "cross_account_assume_role_policy" {
-  statement {
-    effect = "Allow"
     principals {
       type        = "AWS"
-      identifiers = [var.cross_acc_principal_arns]
+      identifiers = ["*"]
     }
-    actions = ["sts:AssumeRole"]
+
+    resources = [
+      "${aws_sns_topic.sns_topic.arn}",
+    ]
+
+    sid = "__default_statement_ID"
   }
+
 }
-# IAM Policy Attachment
-resource "aws_iam_policy_attachment" "iam_policy_attachment" {
-  name        = "${lower(var.name)}-iam_policy_attachment-${lower(var.environment)}"
-  roles       = [aws_iam_role.iam_role.name]
-  policy_arn  = aws_iam_policy.iam_policy.arn
+#---------------------------------------------------
+# Create AWS SNS topic subscription
+#---------------------------------------------------
+resource "aws_sns_topic_subscription" "sns_topic_subscription" {
+  topic_arn = "${aws_sns_topic.sns_topic.id}"
+
+  confirmation_timeout_in_minutes = "${var.confirmation_timeout_in_minutes}"
+  endpoint_auto_confirms          = "${var.endpoint_auto_confirms}"
+  raw_message_delivery            = "${var.raw_message_delivery}"
+
+  protocol  = "${var.sns_protocol}"
+  endpoint  = "${var.sns_endpoint}"
+
+  depends_on = ["aws_sns_topic.sns_topic"]
 }
-# Attachment Assuming Crossaccount Role
-resource "aws_iam_role_policy_attachment" "cross_account_assume_role" {
-  count      = var.enable_crossaccount_role ? length(var.cross_acc_policy_arns) : 0
-  role       = aws_iam_role.cross_account_assume_role.name
-  policy_arn = element(var.cross_acc_policy_arns, count.index)
-  depends_on = ["aws_iam_role.cross_account_assume_role"]
-}
+

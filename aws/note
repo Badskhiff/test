@@ -22,3 +22,17 @@ access_id
 AKIATTBUSM2QZYRIY3U4
 secretacces
 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
+
+
+
+https://github.com/Badskhiff/test/archive/master.zip
+
+terraform init
+
+terraform get
+
+terraform plan
+
+terraform apply
+
+terraform destroy
