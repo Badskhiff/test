@@ -14,7 +14,7 @@ export PATH="$PATH:/home/ubuntu/packer"
 
 create ami
 
-
+packer build ami.json
 
 cm
 Test_123

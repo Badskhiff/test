@@ -1,48 +1,98 @@
+#-----------------------------------------------------------
+# Global or/and default variables
+#-----------------------------------------------------------
 variable "name" {
   description = "Name to be used on all resources as prefix"
-  default     = "TEST-AIM"
-}
-
-variable "region" {
-  description = "The region where to deploy this code (e.g. us-east-1)."
-  default     = "us-east-2"
+  default     = "TEST-SNS"
 }
 
 variable "environment" {
-  description = "environment for service"
+  description = "Environment for service"
   default     = "STAGE"
 }
 
-variable "aws_iam_role-principals" {
-  description = "List of allowed principals."
-  type        = "list"
+variable "orchestration" {
+  description = "Type of orchestration"
+  default     = "Terraform"
 }
 
-variable "aws_iam_policy-resources" {
-  description = "List of allowed resources."
-  type        = "list"
-  default     = ["*"]
+variable "createdby" {
+  description = "Created by"
+  default     = "Vitaliy Natarov"
 }
 
-variable "aws_iam_policy-actions" {
-  description = "List of allowed actions."
-  type        = "list"
-  default     = ["*"]
+variable "account-id" {
+  description = "Account ID"
+  default     = ""
 }
 
-variable "enable_crossaccount_role" {
-  description = "Enabling cross account role"
+variable "delivery_policy" {
+  description = "Delivery policy"
+  default     = ""
+}
+
+variable "sns_protocol" {
+  description = "The protocol to use. The possible values for this are: sqs, sms, lambda, application. (http or https are partially supported, see below) (email is option but unsupported, see below)."
+  default     = "sqs"
+}
+
+variable "sns_endpoint" {
+  description = "The endpoint to send data to, the contents will vary with the protocol. (see below for more information)"
+  default     = ""
+}
+
+variable "confirmation_timeout_in_minutes" {
+  description = "Set timeout in minutes. Integer indicating number of minutes to wait in retying mode for fetching subscription arn before marking it as failure. Only applicable for http and https protocols (default is 1 minute)."
+  default     = "1"
+}
+
+variable "endpoint_auto_confirms" {
+  description = "Enable endpoint auto confirms. Boolean indicating whether the end point is capable of auto confirming subscription e.g., PagerDuty (default is false)"
   default     = "false"
 }
 
-variable "cross_acc_principal_arns" {
-  description = "ARNs of accounts, groups, or users with the ability to assume this role."
-  type        = "list"
-  default     = ["222222222222","arn:aws:iam::333333333333:user/MyUser"]
+variable "raw_message_delivery" {
+  description = "Set raw message delivery.Boolean indicating whether or not to enable raw message delivery (the original message is directly passed, not wrapped in JSON with the original message in the message property) (default is false)."
+  default     = "false"
 }
 
-variable "cross_acc_policy_arns" {
-  description = "List of ARNs of policies to be associated with the created IAM role"
-  type        = "list"
-  default     = ["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser", "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+#Delivery policies
+variable "minDelayTarget" {
+  description = "Set minDelayTarget. Max=20"
+  default     = "19"
+}
+
+variable "maxDelayTarget" {
+  description = "Set maxDelayTarget. Max=20"
+  default     = "19"
+}
+
+variable "numRetries" {
+  description = ""
+  default     = "3"
+}
+
+variable "numMaxDelayRetries" {
+  description = ""
+  default     = "0"
+}
+
+variable "numNoDelayRetries" {
+  description = ""
+  default     = "0"
+}
+
+variable "numMinDelayRetries" {
+  description = ""
+  default     = "0"
+}
+
+variable "backoffFunction" {
+  description = "Set backoffFunction. Can set: arithmetic, exponential or linear."
+  default     = "linear"
+}
+
+variable "disableSubscriptionOverrides" {
+  description = ""
+  default     = "false"
 }
