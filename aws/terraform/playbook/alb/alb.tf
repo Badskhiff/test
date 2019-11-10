@@ -10,6 +10,9 @@ provider "aws" {
   access_key = "${var.aws_access_key}"
   secret_key = "${var.aws_secret_key}"
 }
+module "vpc" {
+  source                              = ".//../../modules/vpc"
+}
 module "alb" {
   source                  = ".//../../modules/alb"
   name                    = "App-Load-Balancer"
