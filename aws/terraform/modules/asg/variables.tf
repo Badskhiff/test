@@ -1,6 +1,3 @@
-#-----------------------------------------------------------
-# Global or/and default variables
-#-----------------------------------------------------------
 variable "name" {
   description = "Name to be used on all resources as prefix"
   default     = "TEST-ASG"
@@ -8,12 +5,12 @@ variable "name" {
 
 variable "region" {
   description = "The region where to deploy this code (e.g. us-east-1)."
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "environment" {
   description = "Environment for service"
-  default     = "STAGE"
+  default     = "TEST"
 }
 
 variable "orchestration" {
@@ -49,7 +46,7 @@ variable "iam_instance_profile" {
 
 variable "key_path" {
   description = "Key path to your RSA|DSA key"
-  default     = "/Users/captain/.ssh/id_rsa.pub"
+  default     = "/home/ubuntu/.ssh/id_rsa.pub"
 }
 
 variable "security_groups" {
@@ -125,15 +122,12 @@ variable "availability_zones" {
 }
 
 variable "ami" {
-  description = "I added only 3 regions to show the map feature but you can add all"
+  description = "regions"
   type        = "map"
   default     = {
-    us-east-1 = "ami-46c1b650"
-    us-west-2 = "ami-46c1b632"
-    eu-west-1 = "ami-6e28b517"
+    us-east-2 = "ami-09e7cafd5240be236"
   }
 }
-
 variable "enable_create_before_destroy" {
   description = "Create before destroy"
   default     = "true"

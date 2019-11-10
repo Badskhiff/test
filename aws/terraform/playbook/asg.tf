@@ -1,22 +1,23 @@
-
 terraform {
-  required_version = "> 0.9.0"
+  required_version = "> 0.12.13"
+}
+variable "aws_access_key" {
+  default = ""
+}
+variable "aws_secret_key" {
+  default = ""
 }
 provider "aws" {
-  region  = "us-east-1"
-  profile = "default"
-  # Make it faster by skipping something
-  #skip_get_ec2_platforms      = true
-  #skip_metadata_api_check     = true
-  #skip_region_validation      = true
-  #skip_credentials_validation = true
-  #skip_requesting_account_id  = true
+  region  = "us-east-2"
+  #shared_credentials_file = "${pathexpand("~/.aws/credentials")}"
+   access_key = "${var.aws_access_key}"
+   secret_key = "${var.aws_secret_key}"
 }
 module "iam" {
   source                          = "../modules/iam"
   name                            = "TEST-AIM"
-  region                          = "us-east-1"
-  environment                     = "PROD"
+  region                          = "us-east-2"
+  environment                     = "TEST"
 
   aws_iam_role-principals         = [
     "ec2.amazonaws.com",
@@ -39,7 +40,6 @@ module "vpc" {
   source                              = "/../modules/vpc"
   name                                = "TEST-VPC"
   environment                         = "TEST"
-  # VPC
   instance_tenancy                    = "dedicated"
   enable_dns_support                  = "true"
   enable_dns_hostnames                = "true"
@@ -60,10 +60,11 @@ module "vpc" {
 module "asg" {
   source                              = "../modules/asg"
   name                                = "TEST-ASG"
-  region                              = "us-east-1"
-  environment                         = "PROD"
+  region                              = "us-east-2"
+  environment                         = "TEST"
 
-  security_groups = ["${module.vpc.security_group_id}"]
+  security_groups = [
+    module.vpc.security_group_id]
 
   root_block_device  = [
     {
@@ -73,42 +74,30 @@ module "asg" {
   ]
 
   # Auto scaling group
-  #asg_name                  = "example-asg"
-  vpc_zone_identifier       = ["${module.vpc.vpc-publicsubnet-ids}"]
+  vpc_zone_identifier       = [
+    module.vpc.vpc-publicsubnet-ids]
   health_check_type         = "EC2"
   asg_min_size              = 0
   asg_max_size              = 1
   desired_capacity          = 1
   wait_for_capacity_timeout = 0
-
-  load_balancers            = ["${module.elb.elb_name}"]
-
-  #
   enable_autoscaling_schedule = true
 }
 module "alb" {
   source                  = "../modules/alb"
   name                    = "App-Load-Balancer"
-  region                  = "us-east-1"
-  environment             = "PROD"
+  region                  = "us-east-2"
+  environment             = "TEST"
 
   load_balancer_type          = "application"
-  security_groups             = ["${module.vpc.security_group_id}", "${module.vpc.default_security_group_id}"]
-  subnets                     = ["${module.vpc.vpc-privatesubnet-ids}"]
-  vpc_id                      = "${module.vpc.vpc_id}"
+  security_groups             = [module.vpc.security_group_id, module.vpc.default_security_group_id]
+  subnets                     = [module.vpc.vpc-privatesubnet-ids]
+  vpc_id                      = module.vpc.vpc_id
   enable_deletion_protection  = false
 
   backend_protocol    = "HTTP"
   alb_protocols       = "HTTP"
 
-  target_ids          = ["${module.ec2.instance_ids}"]
-
-  #access_logs = [
-  #    {
-  #        enabled         = true
-  #        bucket          = "${module.s3.bucket_name}"
-  #        prefix          = "log"
-  #    },
-  #]
+  target_ids          = [module.ec2.instance_ids]
 
 }
