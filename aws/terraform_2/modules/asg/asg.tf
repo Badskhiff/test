@@ -1,5 +1,5 @@
 resource "aws_key_pair" "key_pair" {
-  key_name = "aws_test"
+  key_name = "terraform_ec2_key"
   public_key = file(var.key_path)
 }
 resource "aws_launch_configuration" "lc" {

@@ -12,7 +12,6 @@ provider "aws" {
 module "vpc" {
   source                              = ".//../../modules/vpc"
   name                                = "TEST-VPC"
-  environment                         = "TEST"
   instance_tenancy                    = "dedicated"
   enable_dns_support                  = "true"
   enable_dns_hostnames                = "true"

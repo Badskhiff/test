@@ -41,7 +41,7 @@ variable "ec2_instance_type" {
 
 variable "key_path" {
   description = "Key path to your RSA|DSA key"
-  default     = "/home/ubuntu/.ssh/id_rsa.pub"
+  default     = "/home/ubuntu/key/terraform_ec2_key.pub"
 }
 
 variable "security_groups" {

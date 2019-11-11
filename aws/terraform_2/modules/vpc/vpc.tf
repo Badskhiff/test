@@ -3,8 +3,8 @@ resource "aws_vpc" "test_vpc" {
   instance_tenancy                    = var.instance_tenancy
   enable_dns_support                  = var.enable_dns_support
   enable_dns_hostnames                = var.enable_dns_hostnames
-  tags {
-    Name = "TEST VPC"
+  tags = {
+    Name = var.name
   }
 }
 resource "aws_subnet" "public_subnets" {
@@ -46,6 +46,9 @@ resource "aws_security_group" "security" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+  lifecycle {
+    create_before_destroy = true
   }
   depends_on  = ["aws_vpc.test_vpc"]
 }
