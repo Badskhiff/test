@@ -57,3 +57,14 @@ if (status == 0) {
 } else {
     echo 2
 }
+
+
+test
+AKIATTBUSM2QTQ2B2D4D
+wTTDEyA05TfaaoE4og3VkmXGXihaUEvOdUWPhJFh
+
+[default]
+aws_access_key_id=AKIATTBUSM2QZYRIY3U4
+aws_secret_access_key=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
+
+file("/home/ubuntu/key/cred")

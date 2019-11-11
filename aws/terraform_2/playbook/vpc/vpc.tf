@@ -1,13 +1,8 @@
-variable "aws_access_key" {
-  default = "AKIATTBUSM2QZYRIY3U4"
-}
-variable "aws_secret_key" {
-  default = "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"
-}
 provider "aws" {
   region  = "us-east-2"
-  access_key = "${var.aws_access_key}"
-  secret_key = "${var.aws_secret_key}"
+  shared_credentials_file = file("/home/ubuntu/key/cred")
+  #access_key = "${var.aws_access_key}"
+  #secret_key = "${var.aws_secret_key}"
 }
 module "vpc" {
   source                              = ".//../../modules/vpc"
