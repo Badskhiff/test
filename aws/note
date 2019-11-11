@@ -36,3 +36,24 @@ terraform plan
 terraform apply
 
 terraform destroy
+
+
+Jenkins123
+
+terraform state list aws_vpc.test_vpc
+
+echo aws_vpc.test_vpc | terraform console
+
+
+echo terraform state list aws_vpc.test_vpc >test 2>&1
+
+No state file was found!
+
+def outfile = 'stdout.out'
+def status = sh(script:"echo aws_vpc.test_vpc | terraform console >test 2>&1", returnStatus:true)
+def output = readFile(outfile).trim()
+if (status == 0) {
+    echo 1
+} else {
+    echo 2
+}

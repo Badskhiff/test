@@ -18,7 +18,7 @@
     "type": "shell",
     "inline": [
       "sleep 60",
-      "sudo wget https://github.com/ -O /var/www/html/",
+      "sudo wget https://raw.githubusercontent.com/Badskhiff/aws/master/application/topic.html -O /var/www/html/topic.html",
     ]
   }]
 }
