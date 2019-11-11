@@ -28,7 +28,7 @@ resource "aws_launch_configuration" "lc" {
 resource "aws_autoscaling_group" "asg" {
   count                       = var.create_asg
   launch_configuration        = var.create_lc ? element(aws_launch_configuration.lc.*.name, 0) : var.launch_configuration
-  name_prefix                 = "${var.name}-asg-"
+  name                        = "${var.name}-asg"
   max_size                    = var.asg_max_size
   min_size                    = var.asg_min_size
   vpc_zone_identifier         = [var.vpc_zone_identifier]
@@ -59,19 +59,10 @@ resource "aws_autoscaling_group" "asg" {
   depends_on  = ["aws_launch_configuration.lc"]
 }
 resource "aws_autoscaling_lifecycle_hook" "autoscaling_lifecycle_hook" {
-  count                   = "${var.enable_autoscaling_lifecycle_hook && !var.enable_asg_azs ? 1 : 0 }"
-
-  name                    = "${lower(var.name)}-asg-lifecycle-hook-${lower(var.environment)}"
-  autoscaling_group_name  = "${length(var.autoscaling_group_name) > 0 ? "${var.autoscaling_group_name}" : "${aws_autoscaling_group.asg.name}" }"
-
-  default_result          = "${var.autoscaling_lifecycle_hook_default_result}"
-  heartbeat_timeout       = "${var.autoscaling_lifecycle_hook_heartbeat_timeout}"
-  lifecycle_transition    = "${var.autoscaling_lifecycle_hook_lifecycle_transition}"
-
-  notification_metadata   = "${var.autoscaling_lifecycle_hook_notification_metadata}"
-
-  notification_target_arn = "${var.autoscaling_lifecycle_hook_notification_target_arn}"
-  role_arn                = "${var.autoscaling_lifecycle_hook_role_arn}"
+  name                    = "lf-hook"
+  autoscaling_group_name  = "${var.name}-asg"
+  lifecycle_transition    = var.autoscaling_lifecycle_hook_lifecycle_transition
+  role_arn                = data.aws_iam_role.sns_role.arn
 
   lifecycle {
     create_before_destroy   = true
@@ -87,4 +78,7 @@ data "aws_ami" "app_ami" {
     name   = "name"
     values = ["aws_test*"]
   }
+}
+data "aws_iam_role" "sns_role" {
+  name = "sns_role"
 }

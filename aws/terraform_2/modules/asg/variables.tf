@@ -171,3 +171,13 @@ variable "protect_from_scale_in" {
   description = "Allows setting instance protection. The autoscaling group will not select instances with this setting for terminination during scale in events."
   default     = false
 }
+
+variable "enable_autoscaling_lifecycle_hook" {
+  description = "Enable autoscaling lifecycle hook"
+  default     = false
+}
+
+variable "autoscaling_lifecycle_hook_lifecycle_transition" {
+  description = "(Required) The instance state to which you want to attach the lifecycle hook."
+  default     = "autoscaling:EC2_INSTANCE_LAUNCHING"
+}
