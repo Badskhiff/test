@@ -10,18 +10,13 @@ provider "aws" {
   access_key = "${var.aws_access_key}"
   secret_key = "${var.aws_secret_key}"
 }
-module "vpc" {
-  source                              = ".//../../modules/vpc"
-  allowed_ports = ["80", "443"]
-  vpc_cidr = "172.30.0.0/16"
-}
 module "asg" {
   source                              = ".//../../modules/asg"
   name                                = "TEST-ASG"
   region                              = "us-east-2"
   environment                         = "TEST"
 
-  security_groups = ["TEST SECURITY"]
+  security_groups = data.aws_security_groups.security.ids
 
   root_block_device  = [
     {
@@ -31,7 +26,7 @@ module "asg" {
   ]
 
   # Auto scaling group
-  vpc_zone_identifier       = ["public"]
+  vpc_zone_identifier       = data.aws_subnet_ids.public.ids #set after vpc install
   health_check_type         = "EC2"
   asg_min_size              = 0
   asg_max_size              = 1
@@ -39,4 +34,21 @@ module "asg" {
   wait_for_capacity_timeout = 0
   enable_autoscaling_schedule = true
 }
+data "aws_vpcs" "vpc_id" {
+  tags = {
+    Name = "TEST VPC"
+  }
+}
+data "aws_subnet_ids" "public" {
+  vpc_id = data.aws_vpcs.vpc_id.ids
 
+  tags = {
+    Tier = "Public"
+  }
+}
+data "aws_security_groups" "security" {
+  filter {
+    name   = "TEST SECURITY"
+    values = data.aws_vpcs.vpc_id.ids
+  }
+}

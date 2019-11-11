@@ -5,7 +5,7 @@ resource "aws_key_pair" "key_pair" {
 resource "aws_launch_configuration" "lc" {
   count                       = var.create_lc
   name_prefix                 = "${var.name}-lc-"
-  image_id                    = lookup(var.ami, var.region)
+  image_id                    = data.aws_ami.app_ami.id
   instance_type               = var.ec2_instance_type
   #security_groups             = [var.security_groups]
   #iam_instance_profile        = var.iam_instance_profile
@@ -43,6 +43,10 @@ resource "aws_autoscaling_group" "asg" {
   termination_policies        = var.termination_policies
   wait_for_capacity_timeout   = var.wait_for_capacity_timeout
   protect_from_scale_in       = var.protect_from_scale_in
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   tags = [
     {
