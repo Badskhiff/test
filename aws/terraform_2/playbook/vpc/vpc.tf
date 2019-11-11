@@ -16,8 +16,6 @@ module "vpc" {
   instance_tenancy                    = "dedicated"
   enable_dns_support                  = "true"
   enable_dns_hostnames                = "true"
-  assign_generated_ipv6_cidr_block    = "false"
-  enable_classiclink                  = "false"
   vpc_cidr                            = "172.30.0.0/16"
   private_subnet_cidrs                = ["172.30.60.0/20"]
   public_subnet_cidrs                 = ["172.30.80.0/20"]

@@ -12,6 +12,8 @@ provider "aws" {
 }
 module "vpc" {
   source                              = ".//../../modules/vpc"
+  allowed_ports = ["80", "443"]
+  vpc_cidr = "172.30.0.0/16"
 }
 module "asg" {
   source                              = ".//../../modules/asg"
@@ -19,19 +21,17 @@ module "asg" {
   region                              = "us-east-2"
   environment                         = "TEST"
 
-  security_groups = [
-    module.vpc.security_group_id]
+  security_groups = ["TEST SECURITY"]
 
   root_block_device  = [
     {
       volume_size = "8"
-      volume_type = "gp2"
+      volume_type = "standard"
     },
   ]
 
   # Auto scaling group
-  vpc_zone_identifier       = [
-    module.vpc.vpc-publicsubnet-ids]
+  vpc_zone_identifier       = ["public"]
   health_check_type         = "EC2"
   asg_min_size              = 0
   asg_max_size              = 1
