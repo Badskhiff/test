@@ -12,7 +12,7 @@
     "source_ami": "ami-09e7cafd5240be236",
     "instance_type": "t2.micro",
     "ssh_username": "ec2-user",
-    "ami_name": "aws_test-{{user `Build`}}"
+    "ami_name": "aws_test-{{timestamp}}"
   }],
   "provisioners": [{
     "type": "shell",

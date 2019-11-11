@@ -54,3 +54,11 @@ resource "aws_autoscaling_group" "asg" {
 
   depends_on  = ["aws_launch_configuration.lc"]
 }
+data "aws_ami" "app_ami" {
+  most_recent = true
+  owners = ["self"]
+  filter {
+    name   = "name"
+    values = ["aws_test*"]
+  }
+}
