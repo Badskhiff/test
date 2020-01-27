@@ -1,0 +1,32 @@
+{
+  "_comment" : "This is nginx",
+  "variables": {
+    "aws_access_key": "AKIATTBUSM2QZYRIY3U4",
+    "aws_secret_key": "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"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "us-east-2",
+    "source_ami": "ami-09e7cafd5240be236",
+    "instance_type": "t2.micro",
+    "ssh_username": "ubuntu",
+    "ami_name": "nginx-{{timestamp}}"
+  }],
+  "provisioners": [{
+    "type": "shell",
+    "inline": [
+      "sleep 60",
+      "sudo wget https://raw.githubusercontent.com/Badskhiff/aws/master/nginx/script/docker_ce.sh -O /tmp/docker_ce.sh",
+      "whoami",
+      "cd /tmp",
+      "chmod +x bootstrap_docker_ce.sh",
+      "chmod +x cleanup.sh",
+      "ls -alh /tmp",
+      "./bootstrap_docker_ce.sh",
+      "sleep 10",
+      "docker run -dit --restart always --name docker-nginx -p 80:80 nginx"
+    ]
+  }]
+}
