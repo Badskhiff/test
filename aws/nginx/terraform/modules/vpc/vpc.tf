@@ -1,4 +1,4 @@
-resource "aws_vpc" "test_vpc" {
+resource "aws_vpc" "nginx_vpc" {
   cidr_block                          = cidrsubnet(var.vpc_cidr, 0, 0)
   instance_tenancy                    = var.instance_tenancy
   enable_dns_support                  = var.enable_dns_support
@@ -10,10 +10,10 @@ resource "aws_vpc" "test_vpc" {
 resource "aws_subnet" "public_subnets" {
   count                   = length(var.public_subnet_cidrs)
   cidr_block              = element(var.public_subnet_cidrs, count.index)
-  vpc_id                  = aws_vpc.test_vpc.id
+  vpc_id                  = aws_vpc.nginx_vpc.id
   map_public_ip_on_launch = var.map_public_ip_on_launch
   availability_zone       = element(var.availability_zones, 0)
-  depends_on              = ["aws_vpc.test_vpc"]
+  depends_on              = ["aws_vpc.nginx_vpc"]
   tags = {
     Name                  = "Public subnet"
   }
@@ -21,10 +21,10 @@ resource "aws_subnet" "public_subnets" {
 resource "aws_subnet" "private_subnets" {
   count                   = length(var.private_subnet_cidrs)
   cidr_block              = element(var.private_subnet_cidrs, count.index)
-  vpc_id                  = aws_vpc.test_vpc.id
+  vpc_id                  = aws_vpc.nginx_vpc.id
   map_public_ip_on_launch = "false"
   availability_zone       = element(var.availability_zones, 0)
-  depends_on              = ["aws_vpc.test_vpc"]
+  depends_on              = ["aws_vpc.nginx_vpc"]
   tags = {
     Name                  = "Private subnet"
   }
@@ -32,7 +32,7 @@ resource "aws_subnet" "private_subnets" {
 resource "aws_security_group" "security" {
   name                = "TEST SECURITY"
   description         = "TEST SECURITY"
-  vpc_id              = aws_vpc.test_vpc.id
+  vpc_id              = aws_vpc.nginx_vpc.id
   #to host
   ingress {
     from_port   = 22
@@ -50,7 +50,7 @@ resource "aws_security_group" "security" {
   lifecycle {
     create_before_destroy = true
   }
-  depends_on  = ["aws_vpc.test_vpc"]
+  depends_on  = ["aws_vpc.nginx_vpc"]
 }
 resource "aws_security_group_rule" "ingress_ports" {
   count               = length(var.allowed_ports)
@@ -74,13 +74,13 @@ resource "aws_security_group_rule" "egress_ports" {
 }
 resource "aws_internet_gateway" "internet_gw" {
   count             = length(var.public_subnet_cidrs) > 0 ? 1 : 0
-  vpc_id            = aws_vpc.test_vpc.id
-  depends_on        = ["aws_vpc.test_vpc"]
+  vpc_id            = aws_vpc.nginx_vpc.id
+  depends_on        = ["aws_vpc.nginx_vpc"]
 }
 resource "aws_route_table" "public_route_tables" {
   count            = length(var.public_subnet_cidrs) > 0 ? 1 : 0
-  vpc_id           = aws_vpc.test_vpc.id
-  depends_on       = ["aws_vpc.test_vpc"]
+  vpc_id           = aws_vpc.nginx_vpc.id
+  depends_on       = ["aws_vpc.nginx_vpc"]
 }
 resource "aws_route" "public_internet_gateway" {
   count                  = length(var.public_subnet_cidrs) > 0 ? 1 : 0
@@ -91,8 +91,8 @@ resource "aws_route" "public_internet_gateway" {
 }
 resource "aws_route_table" "private_route_tables" {
   count               = length(var.availability_zones)
-  vpc_id              = aws_vpc.test_vpc.id
-  depends_on          = ["aws_vpc.test_vpc"]
+  vpc_id              = aws_vpc.nginx_vpc.id
+  depends_on          = ["aws_vpc.nginx_vpc"]
 }
 resource "aws_route_table_association" "public_route_table_associations" {
   count           = length(var.public_subnet_cidrs)

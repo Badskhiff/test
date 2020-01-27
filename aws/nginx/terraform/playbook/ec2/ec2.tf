@@ -33,7 +33,7 @@ module "iam" {
 }
 module "vpc" {
   source                              = "../../modules/vpc"
-  name                                = "TEST-VPC"
+  name                                = "NGINX-VPC"
   environment                         = "PROD"
   # VPC
   instance_tenancy                    = "default"

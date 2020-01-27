@@ -1,7 +1,7 @@
 #Global variables
 variable "name" {
   description = "Name to be used on all resources as prefix"
-  default     = "TEST-VPC"
+  default     = "NGINX-VPC"
 }
 
 variable "instance_tenancy" {
