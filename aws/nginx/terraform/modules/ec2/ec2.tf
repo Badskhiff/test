@@ -1,76 +1,78 @@
-#---------------------------------------------------
-# Define SSH key pair for our instances
-#---------------------------------------------------
 resource "aws_key_pair" "key_pair" {
-  key_name = "${lower(var.name)}-key_pair-${lower(var.environment)}"
-  public_key = "${file("${var.key_path}")}"
+  key_name = "test-very-secret-key"
+  public_key = "ssh-rsa very-big-rsa badskhiff@gmail.com"
 }
-#---------------------------------------------------
-# Create AWS Instance
-#---------------------------------------------------
-resource "aws_instance" "instance" {
-  count                       = "${var.number_of_instances}"
 
-  ami                         = "${lookup(var.ami, var.region)}"
-  instance_type               = "${var.ec2_instance_type}"
-  user_data                   = "${var.user_data}"
-  #user_data                  = "${file("bootstrap.sh")}"
-  key_name                    = "${aws_key_pair.key_pair.id}"
-  subnet_id                   = "${var.subnet_id}"
-  vpc_security_group_ids      = ["${var.vpc_security_group_ids}"]
-  monitoring                  = "${var.monitoring}"
-  iam_instance_profile        = "${var.iam_instance_profile}"
+resource "aws_instance" "nginx" {
+  count                       = length(local.uniq_answers_filtered) + 1
 
-  # Note: network_interface can't be specified together with associate_public_ip_address
-  #network_interface           = "${var.network_interface}"
-  associate_public_ip_address = "${var.enable_associate_public_ip_address}"
-  private_ip                  = "${var.private_ip}"
-  ipv6_address_count          = "${var.ipv6_address_count}"
-  ipv6_addresses              = "${var.ipv6_addresses}"
+  ami                         = data.aws_ami.nginx_ami.id
+  instance_type               = var.ec2_instance_type
+  key_name                    = aws_key_pair.key_pair.id
+  subnet_id                   = var.subnet_id
+  vpc_security_group_ids      = [
+    var.vpc_security_group_ids]
+  monitoring                  = var.monitoring
+  iam_instance_profile        = var.iam_instance_profile
+  associate_public_ip_address = var.enable_associate_public_ip_address
+  private_ip                  = var.private_ip
 
-  source_dest_check                    = "${var.source_dest_check}"
-  disable_api_termination              = "${var.disable_api_termination}"
-  instance_initiated_shutdown_behavior = "${var.instance_initiated_shutdown_behavior}"
-  placement_group                      = "${var.placement_group}"
-  tenancy                              = "${var.tenancy}"
+  source_dest_check                    = var.source_dest_check
+  disable_api_termination              = var.disable_api_termination
+  instance_initiated_shutdown_behavior = var.instance_initiated_shutdown_behavior
+  placement_group                      = var.placement_group
+  tenancy                              = var.tenancy
 
-  ebs_optimized          = "${var.ebs_optimized}"
-  volume_tags            = "${var.volume_tags}"
+  ebs_optimized          = var.ebs_optimized
+  volume_tags            = var.volume_tags
   root_block_device {
-    volume_size = "${var.disk_size}"
+    volume_size = var.disk_size
     #    volume_type = "gp2"
   }
-  ebs_block_device       = "${var.ebs_block_device}"
-  ephemeral_block_device = "${var.ephemeral_block_device}"
+  ebs_block_device       = var.ebs_block_device
+  ephemeral_block_device = var.ephemeral_block_device
 
   lifecycle {
     create_before_destroy = true
-    # Due to several known issues in Terraform AWS provider related to arguments of aws_instance:
-    # (eg, https://github.com/terraform-providers/terraform-provider-aws/issues/2036)
-    # we have to ignore changes in the following arguments
     ignore_changes = ["private_ip", "vpc_security_group_ids", "root_block_device"]
   }
 
   tags {
-    Name            = "${lower(var.name)}-ec2-${lower(var.environment)}-${count.index+1}"
-    Environment     = "${var.environment}"
-    Orchestration   = "${var.orchestration}"
-    Createdby       = "${var.createdby}"
-  }
-  ##############################################
-  # Provisioning
-  #############################################
-  provisioner "remote-exec" {
-    inline = [
-      "sudo yum update -y",
-      "sudo yum upgrade -y",
-      "uname -a"
-    ]
-    connection {
-      timeout   = "5m"
-      user      = "centos"
-    }
+    Name            = "${lower(var.name)}-${count.index+1}"
   }
 
   depends_on = ["aws_key_pair.key_pair"]
+}
+
+data "aws_ami" "nginx_ami" {
+  most_recent = true
+  owners = ["self"]
+  filter {
+    name   = "name"
+    values = ["nginx-*"]
+  }
+}
+
+#Well, a very large collective farm
+
+data "external" "az_type" {
+  count = length(var.ec2_instance_type)
+
+  program = ["bash", "${path.module}/check_instance_availability.sh"]
+
+  query = {
+    type    = var.ec2_instance_type
+    region  = var.region
+    profile = "${var.aws_profile}"
+  }
+}
+
+locals {
+  uniq_answers = distinct(data.external.az_type.*.result)
+
+  uniq_answers_filtered = [
+  for a in local.uniq_answers :
+  a if length(a) != 0
+  ]
+
 }

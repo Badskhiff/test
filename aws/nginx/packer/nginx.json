@@ -1,8 +1,8 @@
 {
   "_comment" : "This is nginx",
   "variables": {
-    "aws_access_key": "AKIATTBUSM2QZYRIY3U4",
-    "aws_secret_key": "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"
+    "aws_access_key": "very-secret-access-key",
+    "aws_secret_key": "very-secret-secret-key"
   },
   "builders": [{
     "type": "amazon-ebs",

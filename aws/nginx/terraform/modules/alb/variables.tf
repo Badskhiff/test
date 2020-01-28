@@ -1,6 +1,6 @@
 variable "name" {
   description = "Name to be used on all resources as prefix"
-  default     = "TEST-ALB"
+  default     = "NGINX-ALB"
 }
 
 variable "environment" {

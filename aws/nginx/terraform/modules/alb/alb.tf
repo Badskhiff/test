@@ -50,16 +50,16 @@ resource "aws_lb_listener" "app_http" {
   depends_on = ["aws_lb.alb","aws_lb_target_group.alb_target_group"]
 }
 resource "aws_lb_target_group_attachment" "alb_target_group_attachment" {
-  count               = length(data.aws_instances.asg_instance.ids)
+  count               = length(data.aws_instances.ec2_instance.ids)
   target_group_arn    = aws_lb_target_group.alb_target_group.arn
-  target_id           = data.aws_instances.asg_instance.ids[count.index]
+  target_id           = data.aws_instances.ec2_instance.ids[count.index]
   port                = var.backend_port
 
   depends_on = ["aws_lb.alb","aws_lb_target_group.alb_target_group"]
 }
-data "aws_instances" "asg_instance" {
+data "aws_instances" "ec2_instance" {
   filter {
     name   = "name"
-    values = ["TEST-ASG*"]
+    values = ["NGINX*"]
   }
 }

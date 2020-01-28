@@ -18,17 +18,6 @@ resource "aws_subnet" "public_subnets" {
     Name                  = "Public subnet"
   }
 }
-resource "aws_subnet" "private_subnets" {
-  count                   = length(var.private_subnet_cidrs)
-  cidr_block              = element(var.private_subnet_cidrs, count.index)
-  vpc_id                  = aws_vpc.nginx_vpc.id
-  map_public_ip_on_launch = "false"
-  availability_zone       = element(var.availability_zones, 0)
-  depends_on              = ["aws_vpc.nginx_vpc"]
-  tags = {
-    Name                  = "Private subnet"
-  }
-}
 resource "aws_security_group" "security" {
   name                = "TEST SECURITY"
   description         = "TEST SECURITY"
@@ -89,20 +78,10 @@ resource "aws_route" "public_internet_gateway" {
   gateway_id             = element(aws_internet_gateway.internet_gw.*.id, count.index)
   depends_on             = ["aws_internet_gateway.internet_gw", "aws_route_table.public_route_tables"]
 }
-resource "aws_route_table" "private_route_tables" {
-  count               = length(var.availability_zones)
-  vpc_id              = aws_vpc.nginx_vpc.id
-  depends_on          = ["aws_vpc.nginx_vpc"]
-}
+
 resource "aws_route_table_association" "public_route_table_associations" {
   count           = length(var.public_subnet_cidrs)
   subnet_id       = element(aws_subnet.public_subnets.*.id, count.index)
   route_table_id  = element(aws_route_table.public_route_tables.*.id, count.index)
   depends_on      = ["aws_route_table.public_route_tables", "aws_subnet.public_subnets"]
-}
-resource "aws_route_table_association" "private_route_table_associations" {
-  count           = length(var.private_subnet_cidrs)
-  subnet_id       = element(aws_subnet.private_subnets.*.id, count.index)
-  route_table_id  = element(aws_route_table.private_route_tables.*.id, count.index)
-  depends_on      = ["aws_route_table.private_route_tables", "aws_subnet.private_subnets"]
 }

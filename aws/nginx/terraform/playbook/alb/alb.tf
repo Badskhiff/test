@@ -22,7 +22,7 @@ module "alb" {
 }
 data "aws_vpcs" "vpc_id" {
   tags = {
-    Name = "TEST VPC"
+    Name = "NGINX-VPC"
   }
 }
 data "aws_subnet_ids" "private" {

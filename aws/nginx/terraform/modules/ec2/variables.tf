@@ -1,44 +1,21 @@
-#-----------------------------------------------------------
-# Global or/and default variables
-#-----------------------------------------------------------
 variable "name" {
   description = "Name to be used on all resources as prefix"
-  default     = "TEST-EC2"
+  default     = "NGINX"
 }
 
 variable "region" {
   description = "The region where to deploy this code (e.g. us-east-1)."
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "environment" {
   description = "Environment for service"
-  default     = "STAGE"
-}
-
-variable "orchestration" {
-  description = "Type of orchestration"
-  default     = "Terraform"
-}
-
-variable "createdby" {
-  description = "Created by"
-  default     = "Vitaliy Natarov"
-}
-
-variable "ami" {
-  description = "I added only 3 regions to show the map feature but you can add all"
-  type        = "map"
-  default     = {
-    us-east-1 = "ami-46c1b650"
-    us-west-2 = "ami-46c1b650"
-    eu-west-1 = "ami-6e28b517"
-  }
+  default     = "TEST"
 }
 
 variable "number_of_instances" {
   description = "Number of instances to make"
-  default     = "1"
+  default     = "2"
 }
 
 variable "ec2_instance_type" {
@@ -67,18 +44,18 @@ variable "disable_api_termination" {
 }
 
 variable "instance_initiated_shutdown_behavior" {
-  description = "Shutdown behavior for the instance" # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/terminating-instances.html#Using_ChangingInstanceInitiatedShutdownBehavior
+  description = "Shutdown behavior for the instance"
   default     = ""
 }
 
 variable "key_path" {
   description = "Key path to your RSA|DSA key"
-  default     = "/Users/captain/.ssh/id_rsa.pub"
+  default     = "/Users/some_user/.ssh/some_key.pub"
 }
 
 variable "private_key" {
   description = "Private key"
-  default     = "/Users/captain/.ssh/id_rsa"
+  default     = "/Users/some_user/.ssh/some_key"
 }
 
 variable "enable_associate_public_ip_address" {
@@ -124,16 +101,6 @@ variable "placement_group" {
 variable "private_ip" {
   description = "Private IP address to associate with the instance in a VPC"
   default     = ""
-}
-
-variable "ipv6_address_count" {
-  description = "A number of IPv6 addresses to associate with the primary network interface. Amazon EC2 chooses the IPv6 addresses from the range of your subnet."
-  default     = 0
-}
-
-variable "ipv6_addresses" {
-  description = "Specify one or more IPv6 addresses from the range of the subnet to associate with the primary network interface"
-  default     = []
 }
 
 variable "volume_tags" {
