@@ -1,0 +1,227 @@
+properties([
+        parameters([
+                [$class: 'ChoiceParameter',
+                 choiceType: 'PT_SINGLE_SELECT',
+                 description: 'prod - prod ;',
+                 filterLength: 1,
+                 filterable: false,
+                 name: 'profile',
+                 script: [
+                         $class: 'GroovyScript',
+                         script: [
+                                 classpath: [],
+                                 sandbox: false,
+                                 script:
+                                         'return[\'prod\']'
+                         ],
+                         fallbackScript: [
+                                 classpath: [],
+                                 sandbox: false,
+                                 script:
+                                         'return [\'error\']'
+                         ]
+                 ]
+                ],
+                gitParameter(
+                        defaultValue: '1.0.0',
+                        name: 'GitTag',
+                        type: 'PT_TAG'
+                ),
+                [$class: 'CascadeChoiceParameter',
+                 choiceType: 'PT_CHECKBOX',
+                 description: 'Build docker image',
+                 filterLength: 1,
+                 filterable: false,
+                 name: 'build',
+                 referencedParameters: 'profile',
+                 script: [
+                         $class: 'GroovyScript',
+                         script: [
+                                 classpath: [],
+                                 sandbox: false,
+                                 script:
+                                         'if (profile.equals("prod")) {return [\'yes\']}'
+                         ],
+                         fallbackScript: [
+                                 classpath: [],
+                                 sandbox: false,
+                                 script:
+                                         'return [\'error\']'
+                         ]
+                 ]
+                ]
+        ])
+])
+
+def validate(tag) {
+    tag = tag.trim()
+    if (!(tag ==~ /^[a-zA-Z0-9-.]*$/)) {
+        return false
+    }
+    return true
+}
+
+pipeline {
+    agent {
+        docker 'build_image:1.1.1'
+    }
+    environment {
+        AwsProfileProd="prod"
+        AwsRegionProd="eu-west-1"
+        AwsUrlProd=".dkr.ecr.eu-west-1.amazonaws.com"
+
+        GitTag="${GitTag}"
+        ServiceName="provider"
+        ContainerName="provider"
+    }
+    stages {
+
+        stage('Prepare Docker volumes') {
+            steps {
+                script {
+                  if (validate(GitTag)) {
+                        cleanWs()
+                        checkout(
+                                [
+                                        $class: 'GitSCM',
+                                        branches: [
+                                                [
+                                                        name: "refs/tags/${GitTag}"
+                                                ]
+                                        ],
+                                        doGenerateSubmoduleConfigurations: false,
+                                        extensions: [
+                                                [
+                                                        $class: 'SubmoduleOption',
+                                                        disableSubmodules: false,
+                                                        parentCredentials: false,
+                                                        recursiveSubmodules: false,
+                                                        reference: '',
+                                                        trackingSubmodules: false
+                                                ]
+                                        ],
+                                        submoduleCfg: [],
+                                        userRemoteConfigs: [
+                                                [
+                                                        credentialsId: "123",
+                                                        url: "git@git.org:service.git"
+                                                ]
+                                        ]
+                                ]
+                        )
+                        stash includes: 'Dockerfile', name: 'Dockerfile'
+                    } else {
+                        currentBuild.result = "ABORTED"
+                        error("NOT VALID TAG")
+                    }
+                }
+            }
+
+        }
+
+        stage('Validate Dockerfile') {
+            when {
+                expression {
+                    params.profile == 'prod'
+                    params.build == 'yes'
+                }
+            }
+            agent {
+                docker {
+                    image 'hadolint/hadolint:latest'
+                }
+            }
+            steps {
+                script {
+                    cleanWs()
+                    unstash 'Dockerfile'
+                    sh 'hadolint Dockerfile'
+                }
+            }
+        }
+
+        stage('Build and push Docker image') {
+            when {
+                expression {
+                    params.profile == 'prod'
+                    params.build == 'yes'
+                }
+            }
+            steps {
+                script {
+                    if (validate(GitTag)) {
+                        cleanWs()
+                        checkout(
+                                [
+                                        $class: 'GitSCM',
+                                        branches: [
+                                                [
+                                                        name: "refs/tags/${GitTag}"
+                                                ]
+                                        ],
+                                        doGenerateSubmoduleConfigurations: false,
+                                        extensions: [
+                                                [
+                                                        $class: 'SubmoduleOption',
+                                                        disableSubmodules: false,
+                                                        parentCredentials: false,
+                                                        recursiveSubmodules: false,
+                                                        reference: '',
+                                                        trackingSubmodules: false
+                                                ]
+                                        ],
+                                        submoduleCfg: [],
+                                        userRemoteConfigs: [
+                                                [
+                                                        credentialsId: "123",
+                                                        url: "git@git.org:service.git"
+                                                ]
+                                        ]
+                                ]
+                        )
+                        sh "echo ${GitTag} > version.txt "
+                        sh "docker build  -t ${AwsUrlProd}/${ContainerName}:${GitTag} .  --no-cache"
+                        sh "AWS_PROFILE=${AwsProfilePROD} docker push ${AwsUrlProd}/${ContainerName}:${GitTag}"
+                    } else {
+                        currentBuild.result = "ABORTED"
+                        error("NOT VALID TAG")
+                    }
+                }
+            }
+            post {
+                success {
+                    sh "docker rmi -f \$(docker image ls --quiet --filter 'reference=${AwsUrlProd}/${ContainerName}:${GitTag}')"
+                }
+            }
+        }
+
+        stage('Update service') {
+            when {
+                expression { params.profile == 'prod' }
+            }
+            steps {
+                script {
+                    cleanWs()
+                    git branch: "provider_tf",
+                            credentialsId: '123',
+                            url: 'git@git.org:service.git'
+                    sh '''
+                        cd provider
+                        sed -i "s/application_version/${GitTag}/" task-definitions/${ServiceName}-td.json
+                        newDate=$(date)
+                        sed -i "s/newDate/${newDate}/" task-definitions/${ServiceName}-td.json
+                        terraform init -lock=true -upgrade -verify-plugins=true
+                        terraform plan -lock=true -input=false -refresh=true -var-file prod.tfvars -out=${ServiceName}.plan
+                        terraform apply -input=false -auto-approve ${ServiceName}.plan
+                    '''
+                }
+            }
+        }
+
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
